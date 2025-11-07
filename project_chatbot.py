@@ -16,7 +16,6 @@ def chatbot():
         
         elif user.lower() in [".", "exit"]:
             print("Chatbot: over ")
-            break
         else:
             print("Chatbot: You said '" + user + "'")
 chatbot()
