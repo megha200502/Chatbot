@@ -1,20 +1,22 @@
-from transformers import pipeline, Conversation
-
-# Model load (DialoGPT-medium का उदाहरण)
-chatbot = pipeline("conversational", model="microsoft/DialoGPT-medium")
-
-print("🤖 Chatbot Ready. Type 'exit' to quit.")
-
-# Create a conversation object to keep context
-conversation = Conversation()
-
-while True:
-    user_text = input("You: ")
-    if user_text.strip().lower() in ["exit", "quit"]:
-        print("Bot: Goodbye 👋")
-        break
-
-    conversation.add_user_input(user_text)
-    chatbot(conversation)  # updates conversation.generated_responses
-    reply = conversation.generated_responses[-1]
-    print("Bot:", reply)
+def chatbot():
+    print("Chatbot: Hi! I am your chatbot ")
+    
+    while True:
+        user = input("You:")
+       
+        
+        if user.lower() in ["bye", "exit"]:
+            print("Chatbot: Bye! Have a nice day ")
+        
+        elif user.lower() in ["hii", "exit"]:
+            print("Chatbot: hello! ")
+        
+        elif user.lower() in ["how are you ?", "exit"]:
+            print("Chatbot: i am fine, thank you ! ")
+        
+        elif user.lower() in [".", "exit"]:
+            print("Chatbot: over ")
+            break
+        else:
+            print("Chatbot: You said '" + user + "'")
+chatbot()
