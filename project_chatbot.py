@@ -1,21 +1,17 @@
-def chatbot():
-    print("Chatbot: Hi! I am your chatbot ")
+from google import genai
+
+api_key = 'api_key here'
+client = genai.Client(api_key=api_key)
+while True:
+    user_input = input("Enter your message: ")
+
     
-    while True:
-        user = input("You:")
-       
-        
-        if user.lower() in ["bye", "exit"]:
-            print("Chatbot: Bye! Have a nice day ")
-        
-        elif user.lower() in ["hii", "exit"]:
-            print("Chatbot: hello! ")
-        
-        elif user.lower() in ["how are you ?", "exit"]:
-            print("Chatbot: i am fine, thank you ! ")
-        
-        elif user.lower() in [".", "exit"]:
-            print("Chatbot: over ")
-        else:
-            print("Chatbot: You said '" + user + "'")
-chatbot()
+    if user_input.lower() in ["bye", "byy"]:
+        print("byy")
+        break  
+
+    chat = client.chats.create(model="gemini-2.5-flash")
+    response = chat.send_message(user_input)
+
+    for message in chat.get_history()[-1:]:
+        print(message.parts[0].text)
