@@ -1,5 +1,5 @@
 from google import genai
-
+ 
 api_key = 'api_key here'
 client = genai.Client(api_key=api_key)
 while True:
