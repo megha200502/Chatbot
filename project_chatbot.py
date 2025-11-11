@@ -1,17 +1,33 @@
-from google import genai
- 
-api_key = 'api_key here'
-client = genai.Client(api_key=api_key)
+import os
+from langchain.chains import ConversationChain
+from langchain.memory import ConversationBufferMemory
+from langchain_google_genai import ChatGoogleGenerativeAI
+
+
+os.environ["GOOGLE_API_KEY"] ='API_key'
+
+llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
+memory = ConversationBufferMemory()
+
+
+chat = ConversationChain(
+    llm=llm,
+    memory=memory,
+    verbose=True  
+)
+
+print(" Gemini Chatbot (type 'exit' to quit)\n")
+
 while True:
-    user_input = input("Enter your message: ")
+    user_input = input("You: ").strip()
+    if not user_input:
+        continue
+    if user_input.lower() in ["exit", "quit"]:
+        print("👋 Bye!")
+        break
 
-    
-    if user_input.lower() in ["bye", "byy"]:
-        print("byy")
-        break  
-
-    chat = client.chats.create(model="gemini-2.5-flash")
-    response = chat.send_message(user_input)
-
-    for message in chat.get_history()[-1:]:
-        print(message.parts[0].text)
+    try:
+        response = chat.run(user_input)
+        print("AI:", response)
+    except Exception as e:
+        print("❌ Error:", e)
