@@ -25,7 +25,8 @@ def load_pdf_into_memory(pdf_path):
     pdf_text = "\n".join([p.page_content for p in pages])
 
     # Add PDF text to chatbot memory
-    memory.chat_memory.add_user_message("PDF KNOWLEDGE: " + pdf_text)
+    memory.chat_memory.add_user_message("PDF KNOWLEDGE:\n" + pdf_text)
+
 
     print("\n📄 PDF Loaded Successfully!")
     print("📌 Now the chatbot will answer using this PDF.\n")
