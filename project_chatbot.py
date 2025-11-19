@@ -1,57 +1,128 @@
+from fastapi import FastAPI
+from pydantic import BaseModel
+from fastapi.responses import StreamingResponse
 import os
-from langchain.chains import ConversationChain
-from langchain.memory import ConversationBufferMemory
+import asyncio
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_community.document_loaders import PyPDFLoader
 
+# ----------------- AGENT IMPORTS -----------------
+from langchain.agents import initialize_agent, AgentType
+from langchain.tools import Tool
+# --------------------------------------------------
 
+app = FastAPI()
 
-os.environ["GOOGLE_API_KEY"] = "api_key"
+os.environ["GOOGLE_API_KEY"] = "api_key"  # Add your Gemini API Key
 
-# LLM
 llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
 
-# Memory
-memory = ConversationBufferMemory()
+class ChatRequest(BaseModel):
+    pdf_path: str | None = None
+    query: str | None = None
 
-# Chatbot
-chat = ConversationChain(llm=llm, memory=memory, verbose=True)
-
-
-# PDF Reader Function
-def load_pdf_into_memory(pdf_path):
-    loader = PyPDFLoader(pdf_path)
-    pages = loader.load()
-    pdf_text = "\n".join([p.page_content for p in pages])
-
-    # Add PDF text to chatbot memory
-    memory.chat_memory.add_user_message("PDF KNOWLEDGE:\n" + pdf_text)
+# MEMORY
+chat_history = ""
 
 
-    print("\n📄 PDF Loaded Successfully!")
-    print("📌 Now the chatbot will answer using this PDF.\n")
+# ----------------- TOOLS -----------------
+def calculator_tool(query: str):
+    try:
+        return str(eval(query))
+    except:
+        return "Invalid math expression."
+
+calculator = Tool(
+    name="Calculator",
+    func=calculator_tool,
+    description="Useful for solving math expressions."
+)
+
+def search_tool(query: str):
+    return f"Search result for '{query}': Example data found!"
+
+search_api = Tool(
+    name="SearchAPI",
+    func=search_tool,
+    description="Useful for searching general information."
+)
+
+# Build the Agent
+agent = initialize_agent(
+    tools=[calculator, search_api],
+    llm=llm,
+    agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+    verbose=False
+)
 
 
-print("Local PDF Knowledge Chatbot Ready!")
-print("Commands:")
-print(" readpdf <path>  → Load PDF")
-print(" exit            → Quit\n")
+# ---------------- STREAMING FUNCTION ----------------
+async def stream_text(text):
+    for word in text.split():
+        yield word + " "
+        await asyncio.sleep(0.02)
 
 
-# Main Loop
-while True:
-    user_input = input("You: ").strip()
 
-    if user_input.lower() in ["exit", "quit"]:
-        print("👋 Bye!")
-        break
+# ---------------- MAIN API ----------------
+@app.post("/pdf_chat")
+async def pdf_chat(req: ChatRequest):
+    global chat_history
 
-    # Check PDF command
-    if user_input.lower().startswith("readpdf "):
-        path = user_input.replace("readpdf ", "").strip()
-        load_pdf_into_memory(path)
-        continue
+    pdf_path = req.pdf_path
+    query = req.query
 
-    # Normal chat (PDF-based answers)
-    response = chat.run(user_input)
-    print("AI:", response)
+    # ----- PDF Load -----
+    if pdf_path:
+        if not pdf_path.lower().endswith(".pdf"):
+            return {"error": "Invalid file format. Only .pdf allowed."}
+
+        if not os.path.exists(pdf_path):
+            return {"error": "PDF not found"}
+
+        try:
+            loader = PyPDFLoader(pdf_path)
+            pages = loader.load()
+        except:
+            return {"error": "Unable to read PDF"}
+
+        chat_history = ""
+        pdf_text = "\n".join([p.page_content for p in pages])
+        chat_history += f"PDF DATA:\n{pdf_text}\n"
+
+        if not query:
+            return {"message": "PDF loaded successfully"}
+
+
+    # ----- Query Missing -----
+    if not query:
+        return {"error": "Please enter a question"}
+
+
+    # Build prompt
+    prompt = chat_history + f"\nUser: {query}\nAssistant:"
+
+
+    # ---------------- SMART AGENT + CHATGPT FALLBACK ----------------
+    try:
+        # Try agent first (PDF + Tools)
+        answer = await asyncio.to_thread(agent.run, prompt)
+
+        # If agent gives blank/weak answer → fallback to normal chatbot
+        if (answer is None 
+            or answer.strip() == "" 
+            or "sorry" in answer.lower() 
+            or "could not" in answer.lower()):
+            answer = await llm.apredict(query)
+
+    except Exception:
+        # If agent fails → normal chatbot answers
+        answer = await llm.apredict(query)
+    # -----------------------------------------------------------------
+
+
+    # Save conversation history
+    chat_history += f"\nUser: {query}\nAssistant: {answer}\n"
+
+    # Stream final answer
+    return StreamingResponse(stream_text(answer), media_type="text/plain")
