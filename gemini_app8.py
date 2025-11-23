@@ -47,7 +47,7 @@ tools = [
 ]
 
 # 5. Create Agent — hub.pull() HATA DIYA  
-print("Downloading Prompt Template without warnings...")
+
 
 client = Client()
 prompt = client.pull_prompt("hwchase17/react")
@@ -63,8 +63,8 @@ agent_executor = AgentExecutor(
 
 # 6. Run
 if __name__ == "__main__":
-    print("\n✅ Agent Ready! (No warnings)")
-    print("Example: 'What is the population of India divided by 2?'")
+    print("\nCalculator")
+    print("What is the population of India divided by 2?")
 
     while True:
         q = input("\nEnter query (or 'exit'): ")
