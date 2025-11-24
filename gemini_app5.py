@@ -6,18 +6,14 @@ from pydantic import BaseModel
 import google.generativeai as genai
 import json
 
-# -------------------------
+
 # Logging Setup
-# -------------------------
 logging.basicConfig(
     filename="app.log",
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
-
-# -------------------------
 # Load API Key From config.json
-# -------------------------
 working_dir = os.path.dirname(os.path.abspath(__file__))
 config_data = json.load(open(f"{working_dir}/config.json"))
 google_api_key = config_data.get("GOOGLE_API_KEY")
@@ -29,9 +25,7 @@ if not google_api_key:
 genai.configure(api_key=google_api_key)
 model = genai.GenerativeModel("gemini-2.5-flash")
 
-# -------------------------
 # FastAPI App
-# -------------------------
 app = FastAPI()
 
 class UserInput(BaseModel):
