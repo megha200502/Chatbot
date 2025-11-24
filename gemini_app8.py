@@ -46,7 +46,7 @@ tools = [
          description="Math operations using numexpr")
 ]
 
-# 5. Create Agent — hub.pull() HATA DIYA  
+# 5. Create Agent — hub.pull()
 
 
 client = Client()
